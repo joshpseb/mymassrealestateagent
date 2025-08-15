@@ -1,0 +1,27 @@
+name: Deploy to SiteGround on PR Merge
+
+on:
+  pull_request:
+    types:
+      - closed   # Only triggers when a PR is closed
+    branches:
+      - main     # Only if the PR is into main
+
+jobs:
+  deploy:
+    if: github.event.pull_request.merged == true  # Only run if the PR was merged
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SITEGROUND_HOST }}
+          username: ${{ secrets.SITEGROUND_USER }}
+          key: ${{ secrets.SITEGROUND_SSH_KEY }}
+          script: |
+            cd ~/www/mymassrealestateagent.com/public_html
+            git reset --hard
+            git pull origin main
