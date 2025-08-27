@@ -1,0 +1,5 @@
+{
+  "name": "MyMassRealEstateAgent",
+  "description": "A real estate website for Massachusetts properties and news, powered by the Gemini API.",
+  "requestFramePermissions": []
+}
