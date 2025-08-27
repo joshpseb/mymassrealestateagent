@@ -15,6 +15,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for production
+        run: npm run build
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -24,5 +38,12 @@ jobs:
           port: 18765
           script: |
             cd ~/www/mymassrealestateagent.com/public_html
+            # Clear existing files
+            rm -rf *
+            # Pull latest code
             git reset --hard
             git pull origin main
+            # Copy built files from dist to public_html
+            cp -r dist/* .
+            # Clean up source files (optional - keeps public_html clean)
+            rm -rf src/ node_modules/ package*.json tsconfig.json vite.config.ts .git/ .github/ 
