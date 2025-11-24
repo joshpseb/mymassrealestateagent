@@ -1,7 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
-
 const newsSchema = {
   type: Type.ARRAY,
   items: {
@@ -18,6 +16,15 @@ const newsSchema = {
 
 export const getRealEstateNews = async () => {
   try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error('❌ GEMINI_API_KEY is not set in environment variables');
+    } else {
+      console.log('✅ GEMINI_API_KEY is loaded (length:', apiKey.length, ')');
+    }
+    
+    const ai = new GoogleGenAI({ apiKey: apiKey || '' });
+
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: 'Generate a list of 4 real estate news articles relevant to the Massachusetts market, relevant to the current market and within the last 30 days.',

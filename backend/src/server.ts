@@ -8,6 +8,14 @@ import newsRoutes from './routes/news.js';
 // Load environment variables
 dotenv.config();
 
+console.log('🔍 Environment variables check:');
+console.log('PORT:', process.env.PORT);
+console.log('MONGODB_URI exists:', !!process.env.MONGODB_URI);
+console.log('MONGODB_URI length:', process.env.MONGODB_URI?.length || 0);
+console.log('GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY);
+console.log('GEMINI_API_KEY length:', process.env.GEMINI_API_KEY?.length || 0);
+console.log('All env keys:', Object.keys(process.env).filter(k => k.includes('GEMINI') || k.includes('MONGO') || k.includes('PORT')));
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
