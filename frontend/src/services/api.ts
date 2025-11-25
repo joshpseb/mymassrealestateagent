@@ -1,22 +1,6 @@
+import { Property, Article } from '../types';
+
 const API_BASE_URL = 'http://localhost:3001/api';
-
-export interface Property {
-  _id?: string;
-  address: string;
-  price: number;
-  bedrooms: number;
-  bathrooms: number;
-  sqft: number;
-  description: string;
-  imageUrl: string;
-}
-
-export interface Article {
-  title: string;
-  summary: string;
-  date: string;
-  imageUrl: string;
-}
 
 // Property API calls
 export const getProperties = async (page = 1, limit = 10) => {
