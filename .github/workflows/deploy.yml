@@ -15,7 +15,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Deploy and build on server
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Deploy frontend via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SITEGROUND_HOST }}
@@ -24,16 +40,16 @@ jobs:
           port: 18765
           script: |
             cd ~/www/mymassrealestateagent.com
-            git pull origin main
-            
-            # Build frontend on server
-            cd frontend
-            npm ci
-            npm run build
-            
-            # Copy to public_html
-            cd ..
-            cd public_html
-            rm -rf *
-            cp -r ../frontend/dist/* .
-            echo "Frontend deployed successfully!"
+            git pull origin main || true
+          script_stop: true
+
+      - name: Copy built files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SITEGROUND_HOST }}
+          username: ${{ secrets.SITEGROUND_USER }}
+          key: ${{ secrets.SITEGROUND_SSH_KEY }}
+          port: 18765
+          source: "frontend/dist/*"
+          target: "~/www/mymassrealestateagent.com/public_html/"
+          strip_components: 2
