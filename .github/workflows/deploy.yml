@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -25,7 +25,8 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd frontend
-          npm ci
+          rm -f package-lock.json
+          npm install
 
       - name: Build frontend
         run: |
@@ -35,7 +36,8 @@ jobs:
       - name: Install backend dependencies
         run: |
           cd backend
-          npm ci
+          rm -f package-lock.json
+          npm install
 
       - name: Build backend
         run: |
@@ -74,7 +76,7 @@ jobs:
           script: |
             cd ~/www/mymassrealestateagent.com/backend
             # Install production-only modules natively on SiteGround
-            npm ci --production
+            npm install --production
             # Gracefully restart the backend server (Supports Phusion Passenger & PM2)
             mkdir -p tmp
             touch tmp/restart.txt || true
