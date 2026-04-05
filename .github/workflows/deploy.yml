@@ -11,6 +11,7 @@ jobs:
   deploy:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -18,34 +19,29 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
+          node-version: '20'
 
+      # ── Frontend ──────────────────────────────────────────
       - name: Install frontend dependencies
-        run: |
-          cd frontend
-          rm -f package-lock.json
-          npm install
+        working-directory: frontend
+        run: npm install
 
       - name: Build frontend
-        run: |
-          cd frontend
-          npm run build
+        working-directory: frontend
+        run: npm run build
 
+      # ── Backend ───────────────────────────────────────────
       - name: Install backend dependencies
-        run: |
-          cd backend
-          rm -f package-lock.json
-          npm install
+        working-directory: backend
+        run: npm install
 
       - name: Build backend
-        run: |
-          cd backend
-          npm run build
+        working-directory: backend
+        run: npm run build
 
-      - name: Copy frontend built files to server
-        uses: appleboy/scp-action@v0.1.7
+      # ── Deploy frontend static assets ────────────────────
+      - name: Copy frontend to server
+        uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.SITEGROUND_HOST }}
           username: ${{ secrets.SITEGROUND_USER }}
@@ -55,19 +51,21 @@ jobs:
           target: "~/www/mymassrealestateagent.com/public_html/"
           strip_components: 2
 
-      - name: Copy backend built files to server
-        uses: appleboy/scp-action@v0.1.7
+      # ── Deploy backend compiled files ─────────────────────
+      - name: Copy backend to server
+        uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.SITEGROUND_HOST }}
           username: ${{ secrets.SITEGROUND_USER }}
           key: ${{ secrets.SITEGROUND_SSH_KEY }}
           port: 18765
-          source: "backend/dist/*,backend/package.json,backend/package-lock.json"
+          source: "backend/dist/*,backend/package.json"
           target: "~/www/mymassrealestateagent.com/backend/"
           strip_components: 1
 
-      - name: Configure Production Backend & Restart Service
-        uses: appleboy/ssh-action@v1.0.3
+      # ── Install production deps & restart on server ───────
+      - name: Install deps and restart backend
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SITEGROUND_HOST }}
           username: ${{ secrets.SITEGROUND_USER }}
@@ -75,12 +73,8 @@ jobs:
           port: 18765
           script: |
             cd ~/www/mymassrealestateagent.com/backend
-            # Install production-only modules natively on SiteGround
             npm install --production
-            # Gracefully restart the backend server (Supports Phusion Passenger & PM2)
             mkdir -p tmp
             touch tmp/restart.txt || true
-            pm2 restart all || true
-            # Backup kill if process was hung, passenger will auto-restart on next HTTP request
-            pkill -f 'node dist/server.js' || true
-          script_stop: true
+            pm2 restart all 2>/dev/null || true
+            pkill -f 'node dist/server.js' 2>/dev/null || true
