@@ -1,6 +1,9 @@
 name: Deploy Full Stack to SiteGround
 
 on:
+  push:
+    branches:
+      - frontend-api-integration  # TEMP: remove after testing
   pull_request:
     types:
       - closed
@@ -9,7 +12,7 @@ on:
 
 jobs:
   deploy:
-    if: github.event.pull_request.merged == true
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
