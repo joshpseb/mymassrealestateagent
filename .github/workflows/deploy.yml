@@ -1,4 +1,4 @@
-name: Deploy Full Stack to SiteGround
+name: Deploy Frontend to SiteGround
 
 on:
   push:
@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: '20'
 
-      # ── Frontend ──────────────────────────────────────────
+      # ── Build frontend ────────────────────────────────────
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm install
@@ -33,16 +33,7 @@ jobs:
         working-directory: frontend
         run: npm run build
 
-      # ── Backend ───────────────────────────────────────────
-      - name: Install backend dependencies
-        working-directory: backend
-        run: npm install
-
-      - name: Build backend
-        working-directory: backend
-        run: npm run build
-
-      # ── Deploy frontend static assets ────────────────────
+      # ── Deploy to SiteGround ──────────────────────────────
       - name: Copy frontend to server
         uses: appleboy/scp-action@v1
         with:
@@ -53,31 +44,3 @@ jobs:
           source: "frontend/dist/*"
           target: "~/www/mymassrealestateagent.com/public_html/"
           strip_components: 2
-
-      # ── Deploy backend compiled files ─────────────────────
-      - name: Copy backend to server
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.SITEGROUND_HOST }}
-          username: ${{ secrets.SITEGROUND_USER }}
-          key: ${{ secrets.SITEGROUND_SSH_KEY }}
-          port: 18765
-          source: "backend/dist/*,backend/package.json"
-          target: "~/www/mymassrealestateagent.com/backend/"
-          strip_components: 1
-
-      # ── Install production deps & restart on server ───────
-      - name: Install deps and restart backend
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SITEGROUND_HOST }}
-          username: ${{ secrets.SITEGROUND_USER }}
-          key: ${{ secrets.SITEGROUND_SSH_KEY }}
-          port: 18765
-          script: |
-            cd ~/www/mymassrealestateagent.com/backend
-            npm install --production
-            mkdir -p tmp
-            touch tmp/restart.txt || true
-            pm2 restart all 2>/dev/null || true
-            pkill -f 'node dist/server.js' 2>/dev/null || true
