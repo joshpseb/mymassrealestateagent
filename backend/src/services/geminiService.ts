@@ -22,23 +22,23 @@ export const getRealEstateNews = async () => {
     } else {
       console.log('✅ GEMINI_API_KEY is loaded (length:', apiKey.length, ')');
     }
-    
+
     const ai = new GoogleGenAI({ apiKey: apiKey || '' });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.1-flash-lite-preview',
       contents: 'Generate a list of 4 real estate news articles relevant to the Massachusetts market, relevant to the current market and within the last 30 days.',
       config: {
         responseMimeType: "application/json",
         responseSchema: newsSchema,
       },
     });
-    
+
     const responseText = response.text;
     if (!responseText) {
-        throw new Error('No response text from Gemini API');
+      throw new Error('No response text from Gemini API');
     }
-    
+
     return JSON.parse(response.text);
   } catch (error) {
     console.error('Gemini API error:', error);
