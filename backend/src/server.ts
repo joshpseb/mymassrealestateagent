@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { connectDatabase } from './config/database.js';
 import propertyRoutes from './routes/properties.js';
 import newsRoutes from './routes/news.js';
+import authRoutes from './routes/auth.js';
 
 // Load environment variables
 dotenv.config();
@@ -26,6 +27,7 @@ app.use(express.json());  // Parse JSON request bodies
 // Routes
 app.use('/api/properties', propertyRoutes);
 app.use('/api/news', newsRoutes);
+app.use('/api/auth', authRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -2,7 +2,37 @@ import { Property, Article } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
-// Property API calls
+// --- AUTHENTICATION ---
+export const getAuthToken = () => localStorage.getItem('token');
+export const setAuthToken = (token: string) => localStorage.setItem('token', token);
+export const removeAuthToken = () => localStorage.removeItem('token');
+
+const getAuthHeaders = () => {
+  const token = getAuthToken();
+  return token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+};
+
+export const loginAdmin = async (credentials: any) => {
+  const res = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(credentials)
+  });
+  if (!res.ok) throw new Error('Failed to login');
+  return res.json();
+};
+
+export const registerAdmin = async (credentials: any) => {
+  const res = await fetch(`${API_BASE_URL}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(credentials)
+  });
+  if (!res.ok) throw new Error('Failed to register');
+  return res.json();
+};
+
+// --- PROPERTIES ---
 export const getProperties = async (page = 1, limit = 10) => {
   const response = await fetch(`${API_BASE_URL}/properties?page=${page}&limit=${limit}`);
   if (!response.ok) {
@@ -22,7 +52,7 @@ export const getProperty = async (id: string) => {
 export const createProperty = async (property: Omit<Property, '_id'>) => {
   const response = await fetch(`${API_BASE_URL}/properties`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(property)
   });
   if (!response.ok) {
@@ -34,7 +64,7 @@ export const createProperty = async (property: Omit<Property, '_id'>) => {
 export const updateProperty = async (id: string, property: Partial<Property>) => {
   const response = await fetch(`${API_BASE_URL}/properties/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(property)
   });
   if (!response.ok) {
@@ -45,7 +75,8 @@ export const updateProperty = async (id: string, property: Partial<Property>) =>
 
 export const deleteProperty = async (id: string) => {
   const response = await fetch(`${API_BASE_URL}/properties/${id}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: getAuthHeaders() // Content-Type isn't strictly needed for DELETE, but getAuthHeaders includes it which is fine
   });
   if (!response.ok) {
     throw new Error('Failed to delete property');
@@ -53,7 +84,7 @@ export const deleteProperty = async (id: string) => {
   return response.json();
 };
 
-// News API call
+// --- NEWS ---
 export const getNews = async (): Promise<Article[]> => {
   const response = await fetch(`${API_BASE_URL}/news`);
   if (!response.ok) {

@@ -1,4 +1,4 @@
-name: Deploy Frontend to SiteGround
+name: Deploy Full Stack to SiteGround
 
 on:
   pull_request:
@@ -31,19 +31,17 @@ jobs:
           cd frontend
           npm run build
 
-      - name: Deploy frontend via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SITEGROUND_HOST }}
-          username: ${{ secrets.SITEGROUND_USER }}
-          key: ${{ secrets.SITEGROUND_SSH_KEY }}
-          port: 18765
-          script: |
-            cd ~/www/mymassrealestateagent.com
-            git pull origin main || true
-          script_stop: true
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm ci
 
-      - name: Copy built files to server
+      - name: Build backend
+        run: |
+          cd backend
+          npm run build
+
+      - name: Copy frontend built files to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SITEGROUND_HOST }}
@@ -53,3 +51,33 @@ jobs:
           source: "frontend/dist/*"
           target: "~/www/mymassrealestateagent.com/public_html/"
           strip_components: 2
+
+      - name: Copy backend built files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SITEGROUND_HOST }}
+          username: ${{ secrets.SITEGROUND_USER }}
+          key: ${{ secrets.SITEGROUND_SSH_KEY }}
+          port: 18765
+          source: "backend/dist/*,backend/package.json,backend/package-lock.json"
+          target: "~/www/mymassrealestateagent.com/backend/"
+          strip_components: 1
+
+      - name: Configure Production Backend & Restart Service
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SITEGROUND_HOST }}
+          username: ${{ secrets.SITEGROUND_USER }}
+          key: ${{ secrets.SITEGROUND_SSH_KEY }}
+          port: 18765
+          script: |
+            cd ~/www/mymassrealestateagent.com/backend
+            # Install production-only modules natively on SiteGround
+            npm ci --production
+            # Gracefully restart the backend server (Supports Phusion Passenger & PM2)
+            mkdir -p tmp
+            touch tmp/restart.txt || true
+            pm2 restart all || true
+            # Backup kill if process was hung, passenger will auto-restart on next HTTP request
+            pkill -f 'node dist/server.js' || true
+          script_stop: true
