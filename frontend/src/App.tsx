@@ -13,6 +13,9 @@ import { RegisterAgentModal } from './components/RegisterAgentModal';
 
 import { HomePage } from './pages/HomePage';
 import { NewsPage } from './pages/NewsPage';
+import { PropertyDetailPage } from './pages/PropertyDetailPage';
+import { AboutPage } from './pages/AboutPage';
+import { InquiriesPage } from './pages/InquiriesPage';
 
 function App() {
   const queryClient = useQueryClient();
@@ -22,6 +25,7 @@ function App() {
   const [showAddPropertyModal, setShowAddPropertyModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showRegisterAgentModal, setShowRegisterAgentModal] = useState(false);
+  const [addPropertyError, setAddPropertyError] = useState('');
 
   useEffect(() => {
     const token = getAuthToken();
@@ -36,13 +40,14 @@ function App() {
     }
   }, []);
 
-  const handleAddProperty = async (newProperty: Property) => {
+  const handleAddProperty = async (newProperty: Omit<Property, '_id'>) => {
     try {
+      setAddPropertyError('');
       await createProperty(newProperty);
       queryClient.invalidateQueries({ queryKey: ['properties'] });
       setShowAddPropertyModal(false);
     } catch (e: any) {
-      alert(`Failed to add property: ${e.message}`);
+      setAddPropertyError(`Failed to add property: ${e.message}`);
       console.error(e);
     }
   };
@@ -70,8 +75,11 @@ function App() {
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<HomePage />} />
+            <Route path="/" element={<HomePage isAuthenticated={isAuthenticated} />} />
             <Route path="/news" element={<NewsPage />} />
+            <Route path="/about" element={<AboutPage isAuthenticated={isAuthenticated} />} />
+            <Route path="/inquiries" element={<InquiriesPage isAuthenticated={isAuthenticated} />} />
+            <Route path="/property/:id" element={<PropertyDetailPage isAuthenticated={isAuthenticated} />} />
           </Routes>
         </AnimatePresence>
       </main>
@@ -92,7 +100,14 @@ function App() {
       <AnimatePresence>
         {showAddPropertyModal && (
           <Modal title="Add New Property" onClose={() => setShowAddPropertyModal(false)}>
-            <AddPropertyForm onAddProperty={handleAddProperty} onClose={() => setShowAddPropertyModal(false)} />
+            <>
+              {addPropertyError && (
+                <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg border border-red-100 text-sm font-medium mb-4">
+                  {addPropertyError}
+                </div>
+              )}
+              <AddPropertyForm onAddProperty={handleAddProperty} onClose={() => setShowAddPropertyModal(false)} />
+            </>
           </Modal>
         )}
       </AnimatePresence>
