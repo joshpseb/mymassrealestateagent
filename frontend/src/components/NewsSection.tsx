@@ -23,8 +23,10 @@ export const NewsSection = ({ articles, isLoading }: NewsSectionProps) => (
     </h2>
     
     {isLoading ? (
-      <div className="flex justify-center my-12">
-        <div className="w-12 h-12 border-4 border-slate-200 border-t-brand-primary rounded-full animate-spin"></div>
+      <div className="my-12 space-y-4 animate-pulse">
+        {[...Array(3)].map((_, idx) => (
+          <div key={idx} className="h-40 bg-slate-200 rounded-2xl" />
+        ))}
       </div>
     ) : (
       <motion.div 
@@ -34,7 +36,7 @@ export const NewsSection = ({ articles, isLoading }: NewsSectionProps) => (
         className="flex flex-col gap-6"
       >
         {articles.map((article, index) => (
-          <NewsArticle key={index} article={article} />
+          <NewsArticle key={article._id || article.sourceUrl || `${article.title}-${index}`} article={article} />
         ))}
       </motion.div>
     )}
