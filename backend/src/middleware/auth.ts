@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { getJwtSecret } from '../config/env.js';
 
 export interface AuthRequest extends Request {
   user?: any;
@@ -13,7 +14,7 @@ export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction)
   }
 
   try {
-    const secret = process.env.JWT_SECRET || 'fallback_secret';
+    const secret = getJwtSecret();
     const decoded = jwt.verify(token, secret);
     req.user = decoded;
     next();

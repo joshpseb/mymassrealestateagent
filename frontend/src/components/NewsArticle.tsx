@@ -24,6 +24,21 @@ export const NewsArticle = ({ article }: NewsArticleProps) => (
       <h3 className="font-display font-bold text-xl text-slate-900 group-hover:text-brand-primary transition-colors mb-2">{article.title}</h3>
       <p className="text-sm font-medium text-slate-400 mb-4">{article.date}</p>
       <p className="text-slate-600 leading-relaxed text-sm">{article.summary}</p>
+      <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          {article.sourceName || 'Market Source'}
+        </p>
+        {article.sourceUrl && (
+          <a
+            href={article.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-sm font-semibold text-brand-primary hover:underline"
+          >
+            Read full article
+          </a>
+        )}
+      </div>
     </div>
   </motion.article>
 );

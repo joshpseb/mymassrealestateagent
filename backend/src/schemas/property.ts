@@ -9,5 +9,6 @@ export const propertySchema = z.object({
     bathrooms: z.number().nonnegative(),
     sqft: z.number().positive(),
     imageUrl: z.string().url("Must be a valid URL").optional(),
+    images: z.array(z.string().url("Each image must be a valid URL")).optional(),
   })
 });
