@@ -1,33 +1,46 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import rateLimit from 'express-rate-limit';
+import fs from 'fs';
+import path from 'path';
 import { connectDatabase } from './config/database.js';
+import { getJwtSecret } from './config/env.js';
 import propertyRoutes from './routes/properties.js';
 import newsRoutes from './routes/news.js';
 import authRoutes from './routes/auth.js';
+import inquiryRoutes from './routes/inquiries.js';
+import agentProfileRoutes from './routes/agentProfile.js';
+import uploadRoutes from './routes/uploads.js';
 
 // Load environment variables
 dotenv.config();
-
-console.log('🔍 Environment variables check:');
-console.log('PORT:', process.env.PORT);
-console.log('MONGODB_URI exists:', !!process.env.MONGODB_URI);
-console.log('MONGODB_URI length:', process.env.MONGODB_URI?.length || 0);
-console.log('GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY);
-console.log('GEMINI_API_KEY length:', process.env.GEMINI_API_KEY?.length || 0);
-console.log('All env keys:', Object.keys(process.env).filter(k => k.includes('GEMINI') || k.includes('MONGO') || k.includes('PORT')));
+getJwtSecret();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 50 });
+const inquiryLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20 });
+const uploadsDir = path.join(process.cwd(), 'uploads');
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Middleware
 app.use(cors());  // Allow frontend to call this API
 app.use(express.json());  // Parse JSON request bodies
 
 // Routes
+app.use('/api/auth', authLimiter);
+app.use('/api/inquiries', inquiryLimiter);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/inquiries', inquiryRoutes);
+app.use('/api/agent-profile', agentProfileRoutes);
+app.use('/api/uploads', uploadRoutes);
+app.use('/api/uploads', express.static(uploadsDir));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
