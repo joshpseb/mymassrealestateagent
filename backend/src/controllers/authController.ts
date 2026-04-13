@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
+import { getJwtSecret } from '../config/env.js';
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -20,7 +21,7 @@ export const register = async (req: Request, res: Response) => {
       }
       try {
         const token = authHeader.split(' ')[1];
-        const secret = process.env.JWT_SECRET || 'fallback_secret';
+        const secret = getJwtSecret();
         jwt.verify(token, secret);
       } catch (e) {
         return res.status(401).json({ error: 'Invalid token. You must be an admin to register others.' });
@@ -56,7 +57,7 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const secret = process.env.JWT_SECRET || 'fallback_secret';
+    const secret = getJwtSecret();
     const token = jwt.sign({ id: user._id, username: user.username }, secret, { expiresIn: '1d' });
     
     res.json({ token, username: user.username });
