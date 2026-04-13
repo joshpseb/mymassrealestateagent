@@ -28,11 +28,17 @@ const PropertySchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    required: true
+    required: false,
+    default: ''
   },
   imageUrl: {
     type: String,
-    required: true
+    required: false,
+    default: ''
+  },
+  images: {
+    type: [String],
+    default: []
   }
 }, {
   timestamps: true  // Automatically adds createdAt and updatedAt fields
