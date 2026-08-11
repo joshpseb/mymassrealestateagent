@@ -53,59 +53,60 @@ export const parseSort = (value: unknown): Record<string, 1 | -1> =>
   SORTS[value as SortKey] ?? SORTS.newest;
 
 export const buildPropertyFilter = (query: Record<string, unknown>) => {
-  const filter: Record<string, any> = {};
+  const clauses: Record<string, any>[] = [];
 
   const statuses = toList(query.status);
-  filter.status = { $in: statuses.length > 0 ? statuses : [...DISPLAYABLE_STATUSES] };
+  if (statuses.length > 0) {
+    clauses.push({ status: { $in: statuses } });
+  } else {
+    // Listings created before the MLS feed existed have no status at all
+    clauses.push({
+      $or: [{ status: { $in: [...DISPLAYABLE_STATUSES] } }, { status: { $exists: false } }]
+    });
+  }
 
   const price = rangeFilter(toNumber(query.minPrice), toNumber(query.maxPrice));
-  if (price) filter.price = price;
+  if (price) clauses.push({ price });
 
   const sqft = rangeFilter(toNumber(query.minSqft), toNumber(query.maxSqft));
-  if (sqft) filter.sqft = sqft;
+  if (sqft) clauses.push({ sqft });
 
   const minBedrooms = toNumber(query.bedrooms);
-  if (minBedrooms) filter.bedrooms = { $gte: minBedrooms };
+  if (minBedrooms) clauses.push({ bedrooms: { $gte: minBedrooms } });
 
   const minBathrooms = toNumber(query.bathrooms);
-  if (minBathrooms) filter.bathrooms = { $gte: minBathrooms };
+  if (minBathrooms) clauses.push({ bathrooms: { $gte: minBathrooms } });
 
   const propertyTypes = toList(query.propertyType);
   if (propertyTypes.length > 0) {
-    filter.$or = [
-      { propertyType: { $in: propertyTypes } },
-      { propertySubType: { $in: propertyTypes } }
-    ];
+    clauses.push({
+      $or: [{ propertyType: { $in: propertyTypes } }, { propertySubType: { $in: propertyTypes } }]
+    });
   }
 
   const cities = toList(query.city);
   if (cities.length > 0) {
-    filter.city = { $in: cities.map((city) => new RegExp(`^${escapeRegex(city)}$`, 'i')) };
+    clauses.push({ city: { $in: cities.map((city) => new RegExp(`^${escapeRegex(city)}$`, 'i')) } });
   }
 
   const boundingBox = parseBoundingBox(query.bbox);
-  if (boundingBox) filter.location = boundingBox;
+  if (boundingBox) clauses.push({ location: boundingBox });
 
   const search = String(query.query ?? '').trim();
   if (search) {
     const pattern = new RegExp(escapeRegex(search), 'i');
-    const searchClauses = [
-      { address: pattern },
-      { city: pattern },
-      { zipCode: pattern },
-      { neighborhood: pattern },
-      { mlsNumber: pattern }
-    ];
-    // `$or` may already be taken by the property-type clause, so combine with `$and`
-    if (filter.$or) {
-      filter.$and = [{ $or: filter.$or }, { $or: searchClauses }];
-      delete filter.$or;
-    } else {
-      filter.$or = searchClauses;
-    }
+    clauses.push({
+      $or: [
+        { address: pattern },
+        { city: pattern },
+        { zipCode: pattern },
+        { neighborhood: pattern },
+        { mlsNumber: pattern }
+      ]
+    });
   }
 
-  return filter;
+  return { $and: clauses };
 };
 
 export const parsePagination = (query: Record<string, unknown>, defaults = { limit: 24, maxLimit: 100 }) => {

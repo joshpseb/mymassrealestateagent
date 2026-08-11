@@ -33,10 +33,9 @@ export const getProperties = async (req: Request, res: Response) => {
 // Lightweight geocoded records for the map view
 export const getPropertyMapPins = async (req: Request, res: Response) => {
   try {
+    const { $and: clauses } = buildPropertyFilter(req.query as Record<string, unknown>);
     const filter = {
-      ...buildPropertyFilter(req.query as Record<string, unknown>),
-      latitude: { $ne: null },
-      longitude: { $ne: null }
+      $and: [...clauses, { latitude: { $ne: null } }, { longitude: { $ne: null } }]
     };
 
     const [pins, total] = await Promise.all([
