@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { connectDatabase } from './config/database.js';
 import { getJwtSecret } from './config/env.js';
+import { startMlspinScheduler } from './services/mlspin/scheduler.js';
 import propertyRoutes from './routes/properties.js';
 import newsRoutes from './routes/news.js';
 import authRoutes from './routes/auth.js';
@@ -52,4 +53,5 @@ connectDatabase().then(() => {
   app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
   });
+  startMlspinScheduler();
 });

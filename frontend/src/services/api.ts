@@ -1,4 +1,14 @@
-import { AgentProfile, Article, Inquiry, InquiryPayload, Property } from '../types';
+import {
+  AgentProfile,
+  Article,
+  Inquiry,
+  InquiryPayload,
+  MlsSyncStatus,
+  Property,
+  PropertyMapResponse,
+  PropertyQueryParams,
+  PropertySearchResponse
+} from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
@@ -47,10 +57,56 @@ export const registerAdmin = async (credentials: any) => {
 };
 
 // --- PROPERTIES ---
-export const getProperties = async (page = 1, limit = 10) => {
-  const response = await fetch(`${API_BASE_URL}/properties?page=${page}&limit=${limit}`);
+const buildPropertyQuery = (params: PropertyQueryParams) => {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return;
+    search.set(key, String(value));
+  });
+  return search.toString();
+};
+
+export const getProperties = async (params: PropertyQueryParams = {}): Promise<PropertySearchResponse> => {
+  const response = await fetch(`${API_BASE_URL}/properties?${buildPropertyQuery(params)}`);
   if (!response.ok) {
     throw new Error('Failed to fetch properties');
+  }
+  return response.json();
+};
+
+export const getPropertyMapPins = async (params: PropertyQueryParams = {}): Promise<PropertyMapResponse> => {
+  const { page, limit, ...rest } = params;
+  const response = await fetch(`${API_BASE_URL}/properties/map?${buildPropertyQuery(rest)}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch map listings');
+  }
+  return response.json();
+};
+
+export const getPropertyCities = async (): Promise<{ city: string; count: number }[]> => {
+  const response = await fetch(`${API_BASE_URL}/properties/cities`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch cities');
+  }
+  const data = await response.json();
+  return data.cities || [];
+};
+
+export const getMlsSyncStatus = async (): Promise<MlsSyncStatus> => {
+  const response = await fetch(`${API_BASE_URL}/properties/sync/status`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch MLS sync status');
+  }
+  return response.json();
+};
+
+export const triggerMlsSync = async (full = false) => {
+  const response = await fetch(`${API_BASE_URL}/properties/sync?full=${full}`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  });
+  if (!response.ok) {
+    throw new Error('Failed to start MLS sync');
   }
   return response.json();
 };

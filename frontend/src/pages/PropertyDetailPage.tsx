@@ -7,6 +7,7 @@ import { deleteProperty, getProperty, resolveAssetUrl, updateProperty } from '..
 import { AddPropertyForm } from '../components/AddPropertyForm';
 import { ContactForm } from '../components/ContactForm';
 import { Modal } from '../components/Modal';
+import { PropertyMap } from '../components/PropertyMap';
 import { Property } from '../types';
 
 interface PropertyDetailPageProps {
@@ -15,6 +16,27 @@ interface PropertyDetailPageProps {
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=1200';
+
+const buildFacts = (property: Property) => {
+  const facts: Array<{ label: string; value: string }> = [];
+  const add = (label: string, value?: string | number | null) => {
+    if (value === undefined || value === null || value === '') return;
+    facts.push({ label, value: String(value) });
+  };
+
+  add('Status', property.status);
+  add('Home type', property.propertySubType || property.propertyType);
+  add('Year built', property.yearBuilt);
+  add('Lot size', property.lotSizeAcres ? `${property.lotSizeAcres} acres` : undefined);
+  add('Garage spaces', property.garageSpaces);
+  add('Days on market', property.daysOnMarket);
+  add('Annual taxes', property.taxAnnualAmount ? `$${property.taxAnnualAmount.toLocaleString()}` : undefined);
+  add('HOA fee', property.hoaFee ? `$${property.hoaFee.toLocaleString()}` : undefined);
+  add('County', property.county);
+  add('MLS #', property.mlsNumber);
+
+  return facts;
+};
 
 export const PropertyDetailPage = ({ isAuthenticated }: PropertyDetailPageProps) => {
   const { id } = useParams();
@@ -78,6 +100,8 @@ export const PropertyDetailPage = ({ isAuthenticated }: PropertyDetailPageProps)
   }
 
   const currentImage = images[activeImageIndex] || FALLBACK_IMAGE;
+  const facts = buildFacts(property);
+  const hasCoordinates = typeof property.latitude === 'number' && typeof property.longitude === 'number';
 
   return (
     <motion.div
@@ -144,10 +168,12 @@ export const PropertyDetailPage = ({ isAuthenticated }: PropertyDetailPageProps)
               <h1 className="font-display text-3xl md:text-4xl font-extrabold text-slate-900">{property.address}</h1>
               <div className="mt-3 flex items-center gap-2 text-slate-500">
                 <MapPin className="w-4 h-4" />
-                <span className="text-sm">Massachusetts, United States</span>
+                <span className="text-sm">
+                  {[property.city, property.state || 'MA', property.zipCode].filter(Boolean).join(', ')}
+                </span>
               </div>
             </div>
-            {isAuthenticated && (
+            {isAuthenticated && property.source !== 'mlspin' && (
               <div className="flex gap-3">
                 <button
                   type="button"
@@ -185,17 +211,46 @@ export const PropertyDetailPage = ({ isAuthenticated }: PropertyDetailPageProps)
           <p className="mt-6 text-slate-600 leading-relaxed">
             {property.description || 'Reach out to the agent for additional details and showing availability.'}
           </p>
+
+          {facts.length > 0 && (
+            <dl className="mt-8 grid grid-cols-2 md:grid-cols-3 gap-4 border-t border-slate-100 pt-6">
+              {facts.map((fact) => (
+                <div key={fact.label}>
+                  <dt className="text-xs uppercase tracking-wide text-slate-400">{fact.label}</dt>
+                  <dd className="font-semibold text-slate-800">{fact.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
+          {(property.listOfficeName || property.listAgentName) && (
+            <p className="mt-6 text-xs text-slate-400">
+              Listing courtesy of {property.listOfficeName || 'the listing office'}
+              {property.listAgentName ? ` — ${property.listAgentName}` : ''}. Data provided by MLS Property
+              Information Network, Inc. Information is deemed reliable but not guaranteed.
+            </p>
+          )}
         </div>
       </section>
 
-      <section className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200">
-        <iframe
-          title="Property map"
-          className="w-full h-80 border-0"
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          src={`https://maps.google.com/maps?q=${encodeURIComponent(property.address)}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
-        />
+      <section className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 p-2">
+        {hasCoordinates ? (
+          <PropertyMap
+            properties={[property]}
+            center={[property.latitude as number, property.longitude as number]}
+            zoom={14}
+            recenterOnCenterChange
+            className="h-80 w-full"
+          />
+        ) : (
+          <iframe
+            title="Property map"
+            className="w-full h-80 border-0"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            src={`https://maps.google.com/maps?q=${encodeURIComponent(property.address)}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
+          />
+        )}
       </section>
 
       <ContactForm propertyId={property._id} propertyAddress={property.address} />
