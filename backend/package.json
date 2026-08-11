@@ -6,7 +6,9 @@
     "scripts": {
         "dev": "tsx watch src/server.ts",
         "build": "tsc",
-        "start": "node dist/server.js"
+        "start": "node dist/server.js",
+        "sync:mls": "tsx src/scripts/syncMlspin.ts",
+        "seed:sample": "tsx src/scripts/seedSampleListings.ts"
     },
     "dependencies": {
         "bcryptjs": "^3.0.3",
